@@ -8,7 +8,11 @@ import {
   updateFavoriteSchema,
 } from "../schemas/contactsSchemas.js";
 
+import { authMiddleware } from "../middlewares/authMiddleware.js";
+
 const router = express.Router();
+
+router.use(authMiddleware);
 
 router.get("/", contactsController.getAllContacts);
 router.get("/:id", contactsController.getContactById);

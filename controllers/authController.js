@@ -2,6 +2,9 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
 import HttpError from "../helpers/HttpError.js";
+import gravatar from "gravatar";
+import fs from "fs/promises";
+import path from "path";
 
 const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey";
 
@@ -20,15 +23,19 @@ export const register = async (req, res, next) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    const avatarURL = gravatar.url(email, { protocol: "http", s: "250"});
+    
     const newUser = await User.create({
       email,
       password: hashedPassword,
+      avatarURL,
     });
 
     res.status(201).json({
       user: {
         email: newUser.email,
         subscription: newUser.subscription,
+        avatarURL: newUser.avatarURL,
       },
     });
   } catch (error) {
@@ -104,6 +111,35 @@ export const current = async (req, res, next) => {
       email: user.email,
       subscription: user.subscription,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const avatarsDir = path.resolve("public", "avatars");
+
+export const updateAvatar = async (req, res, next) => {
+  try {
+    const { file, user } = req;
+
+    if (!file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    await fs.mkdir(avatarsDir, { recursive: true });
+
+    const ext = path.extname(file.originalname);
+    const newFileName = `${user.id}${ext}`;
+    const tempPath = file.path;
+    const finalPath = path.join(avatarsDir, newFileName);
+
+    await fs.rename(tempPath, finalPath);
+
+    const avatarURL = `/avatars/${newFileName}`;
+
+    await User.update({ avatarURL }, { where: { id: user.id } });
+
+    res.json({ avatarURL });
   } catch (error) {
     next(error);
   }

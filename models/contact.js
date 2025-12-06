@@ -22,6 +22,9 @@ const Contact = sequelize.define("contact", {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
+  avatarUrl: {
+    type: DataTypes.STRING,
+  },
 });
 
 export default Contact;
